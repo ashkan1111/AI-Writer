@@ -3,6 +3,6 @@
 
 <h2>Members:</h2>
 <p style="text-decoration:none;"><strong>Developer:</strong><a href="https://github.com/ashkan1111">Ashkan mahdavi</a></p>
-<p><strong>Scrum master:</strong>Mahdi emami</p>
+<p style="text-decoration:underline;"><strong>Scrum master:</strong>Mahdi emami</p>
 <p><strong>Product owner:</strong>Saleh soltani</p>
 <p><strong>Tester:</strong>Zohre sayari</p>
