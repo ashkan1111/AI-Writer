@@ -1,0 +1,17 @@
+#ai-writer-toggle-button {
+  position: fixed;
+  top: 50%;
+  right: 10px; 
+  transform: translateY(-50%);
+  background-color: #f8f9fa;
+  border: 1px solid #ced4da;
+  border-radius: 5px;
+  padding: 8px;
+  cursor: pointer;
+  z-index: 10000; 
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+#ai-writer-toggle-button:hover {
+  background-color: #e9ecef;
+}

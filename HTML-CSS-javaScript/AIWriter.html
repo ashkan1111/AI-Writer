@@ -1,32 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Chat System</title>
-    <link rel="stylesheet" href="AIWriter.css">
-    <script src="AIWriter.js"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Writer Extension</title>
+  <link rel="stylesheet" href="AIWriter.css"/>
+  <script src="AIWriter.js" defer></script>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-box" id="chatBox"></div>
-        <div class="input-container">
-            <div class="input-div">
-                <textarea id="chatInput" placeholder="Type a message..." onkeydown="
-                    if (event.key === 'Enter' && !event.shiftKey) {
-                        event.preventDefault();
-                        submitMessage();
-                    }
-                  ;"></textarea>
-            </div>
-            <div class="submit-icon-div">
-                <button class="send-button" onclick="submitMessage()">
-                    <img src="Send.png" alt="Send" class="send-img">
-                </button>
-            </div>
-        </div>
+  <div class="extension-container">
+    <div class="response-box" id="chatBox">
+      
     </div>
-    
 
+    <div class="input-section">
+      <div class="input-wrapper">
+        <textarea
+          type="text"
+          id="chatInput"
+          placeholder="Type your prompt here..."
+        ></textarea>
+        
+        <button class="send-button">
+          <img src="Send.jpg" alt="Send" style="height: 110%;width: 120%;"/>
+        </button>
+      </div>
+
+      <div class="action-buttons">
+        <button>Summarize</button>
+        <button>Translate to farsi</button>
+        <button>Formalize</button>
+        <button>Rewrite</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

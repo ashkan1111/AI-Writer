@@ -1,100 +1,179 @@
-body {
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  height: 100vh;
-  margin: 0;
-  background-color: #f0f0f0;
-  font-family: sans-serif; 
-}
 
-.chat-container {
-  width: 100%;
-  max-width: 600px;
-  background: white;
-  padding: 20px; 
-  border-radius: 10px;
-  box-shadow: 0 0 15px rgba(0, 0, 0, 0.15); 
-  margin: 20px;
+.extension-container {
+  width: 450px;
+  height: 100vh; 
+  position: fixed;
+  top: 0;
+  right: 0;
+  background-color: #ffffff;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
+  border-left: 2px solid #081222;
+  z-index: 9999;
+  border-radius: 0; 
 }
 
-.chat-box {
-  flex-grow: 1;
-  overflow-y: auto;
-  border-bottom: 1px solid #ddd; 
-  padding-bottom: 15px; 
-  margin-bottom: 15px;
+.response-box {
+  flex: 1; 
+  padding: 20px;
+  overflow-y: auto; 
   display: flex;
-  flex-direction: column;
-  max-height: 400px;
+  flex-direction: column; 
+  gap: 10px; 
 }
 
-.message {
-  background: #007bff;
-  color: white;
-  padding: 10px 15px; 
-  border-radius: 15px; 
-  margin-bottom: 8px; 
-  max-width: 80%;
-  word-wrap: break-word;
-  align-self: flex-start; 
+.response {
+  padding: 10px 15px;
+  border-radius: 18px; 
+  font-size: 15px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+  max-width: 80%; 
+  word-wrap: break-word; 
 }
 
-.bot-message {
-  background-color: #e0e0e0; 
-  color: #333; 
+.user-message {
+  background: #d1e7ff; 
+  margin-top: 30px;
+  margin-bottom: 30px;
+  color: #0a2a4d; 
   align-self: flex-end; 
+  text-align: left;
+  border-bottom-right-radius: 5px; 
 }
 
-.input-container {
+.ai-message {
+  background: #e2e3e5;
+  color: #1c1e21; 
+  align-self: flex-start; 
+  text-align: left; 
+  border-bottom-left-radius: 5px; 
+}
+
+
+.input-section {
+  padding: 15px; 
+  border-top: 1px solid #dee2e6;
+  background: #f8faf8; 
+}
+
+.input-wrapper {
   display: flex;
   align-items: center;
-  border: 1px solid #ccc;
-  border-radius: 25px;
-  padding: 8px; 
-  background-color: white;
+  background: #ffffff;
+  border-radius: 25px; 
+  padding: 5px 5px 5px 15px; 
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+  border: 1px solid #ced4da; 
+  flex: 1;
 }
 
-.input-div {
-  flex-grow: 1;
-  margin-right: 10px;
-}
-
-textarea {
-  width: 100%;
-  height: 50px; 
-  font-size: 16px;
-  padding: 10px 15px; 
-  resize: vertical; 
+.input-wrapper textarea {
+  flex: 1;
   border: none;
-  border-radius: 20px;
   outline: none;
-  box-sizing: border-box; 
+  font-size: 15px;
+  word-wrap: break-word;
+  padding: 8px 0; 
+  background: transparent;
+  resize: none;
+  font-family: inherit;
+  color: #495057; 
+  line-height: 1.2;
 }
 
 .send-button {
-  height: 45px; 
-  width: 45px;
-  border-radius: 50%;
+  background-color: #0d6efd; 
   border: none;
-  background-color: #007bff;
-  color: white;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  outline: none; 
-  transition: background-color 0.3s ease; 
+  transition: background-color 0.2s ease;
+  margin-left: 8px;
 }
 
 .send-button:hover {
-  background-color: #0056b3; 
+    background-color: #0b5ed7; 
 }
 
-.send-img {
-  height: 24px;
-  width: 24px;
+.send-button img {
+  width: 18px;
+  height: 18px;
   filter: brightness(0) invert(1); 
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.action-buttons button {
+  padding: 8px 14px; 
+  background: #e9ecef; 
+  border: 1px solid #ced4da; 
+  border-radius: 20px; 
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500; 
+  color: #495057; 
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.action-buttons button:hover {
+  background: #dee2e6; 
+  border-color: #adb5bd;
+}
+
+.action-buttons .active{
+  background-color: #0d6efd; 
+  color: white; 
+  border-color: #0b5ed7;
+}
+.action-buttons .active:hover {
+  background-color: #0b5ed7; 
+  border-color: #0a58ca;
+}
+
+
+.response-box::-webkit-scrollbar {
+  width: 6px;
+}
+
+.response-box::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.response-box::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 10px;
+}
+
+.response-box::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+.copy-button {
+  background: #e2e3e5;
+  border: solid 1px #0d6efd;
+  border-radius: 20px; 
+  padding: 8px 12px; 
+  margin-top: 10px;
+  margin-bottom: 10px;  
+  color: black;
+  font-weight: 500;
+  text-align: center;
+  font-family: inherit;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+.copy-button:hover {
+  background-color: #0b5ed7; 
+  color: white
 }
