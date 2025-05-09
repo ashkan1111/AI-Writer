@@ -13,6 +13,32 @@
   z-index: 9999;
   border-radius: 0; 
 }
+.chat-history-panel {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 200px;
+  height: 100vh;
+  background: white;
+  border-right: 1px solid #ccc;
+  padding: 10px;
+  z-index: 999998;
+  
+}
+
+#hamburger{
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  font-size: 24px;
+  cursor: pointer;
+  z-index: 9999999;
+  background-color: none;
+  border: none;
+  
+}
+
+
 
 .response-box {
   flex: 1; 

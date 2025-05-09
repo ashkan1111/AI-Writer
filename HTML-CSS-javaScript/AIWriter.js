@@ -1,3 +1,50 @@
+
+/////////////////////////////////////////////////////////Rendering/////////////////////////////////////////////////////////
+function renderChatBubble(className, text) {
+  const chatBox = document.getElementById("chatBox");
+  const bubble = document.createElement("div");
+  bubble.className = "response " + className;
+  bubble.innerHTML = text;
+  const aiText = text.replace(/<[^>]+>/g, '');
+  if(className === "ai-message"){
+    const copyButton = document.createElement("button");
+    copyButton.textContent = "Copy";
+    copyButton.className = "copy-button";
+    copyButton.addEventListener("click", () => {
+        const textarea = document.createElement("textarea");
+        textarea.value = aiText;
+        textarea.style.position = "fixed"; 
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+
+        copyButton.textContent = "Copied!";
+        setTimeout(() => {
+          copyButton.textContent = "Copy";
+        }, 2000);
+
+        try {
+          document.execCommand("copy");
+        } catch (err) {
+          console.error("Copy failed!", err);
+        }
+        document.body.removeChild(textarea);
+
+    });
+    bubble.appendChild(copyButton);
+  }
+
+  chatBox.appendChild(bubble);
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+}
+
+/////////////////////////////////////////////////////////Rendering/////////////////////////////////////////////////////////
+
+
+
+///////////////////////////////////////////////////////////Initialize/////////////////////////////////////////////////////////
+
 window.addEventListener('DOMContentLoaded', () => {
   const inputField = document.getElementById("chatInput");
   const sendButton = document.querySelector('.send-button');
@@ -24,7 +71,99 @@ window.addEventListener('DOMContentLoaded', () => {
   actionButtons.forEach((button) => {
     button.addEventListener('click', () => quickPrompt(button.textContent.trim()));
   });
+
+  window.addEventListener("message", async (event) => {
+    if (event.data.type === "get-chat") {
+      const chatBox = document.getElementById("chatBox");
+      if (chatBox.querySelector(".sign")){
+        
+        const id = Number(chatBox.querySelector(".sign").innerText);
+        chatBox.removeChild(chatBox.querySelector(".sign"));
+        const chat = chatBox.innerHTML;
+        const close = true;
+        window.parent.postMessage({ type: "chat-data", chat,id, close }, "*");
+        
+     }else{
+        const chat = chatBox.innerHTML;
+        const id = 0;
+        const close = true;
+        window.parent.postMessage({ type: "chat-data", chat, id, close }, "*");
+     }
+    }
+  });
+  window.addEventListener("message", async (event) => {
+    if (event.data.type === "show-chat"){
+      const chatBox = document.getElementById("chatBox");
+      if(chatBox.innerHTML !== ""){
+        if (chatBox.querySelector(".sign")){
+          
+          const id = Number(chatBox.querySelector(".sign").innerText);
+          chatBox.removeChild(chatBox.querySelector(".sign"));
+          const chat = chatBox.innerHTML;
+          const close = false;
+          window.parent.postMessage({ type: "chat-data", chat,id,close }, "*");
+          
+        } 
+        else{
+          const chat = chatBox.innerHTML;
+          const id = 0;
+          const close = false;
+          window.parent.postMessage({ type: "chat-data", chat, id, close }, "*");
+        }        
+      }
+
+
+
+      chatBox.innerHTML = event.data.chat;
+      const aiResponse = chatBox.querySelector(".ai-message");
+      const aiText = aiResponse ? aiResponse.innerHTML.replace(/<[^>]+>/g, '') : "";
+      const copyButtons = document.querySelectorAll(".copy-button");
+      copyButtons.forEach((copyButton) => {
+        copyButton.addEventListener("click", () => {
+          const textarea = document.createElement("textarea");
+          textarea.value = aiText;
+          textarea.style.position = "fixed"; 
+          document.body.appendChild(textarea);
+          textarea.focus();
+          textarea.select();
+
+          copyButton.textContent = "Copied!";
+          setTimeout(() => {
+            copyButton.textContent = "Copy";
+          }, 2000);
+
+          try {
+            document.execCommand("copy");
+          } catch (err) {
+            console.error("Copy failed!", err);
+          }
+          document.body.removeChild(textarea);
+
+        });
+      });
+
+      const sign = document.createElement("div");
+      sign.className = "sign";
+      sign.style.display = "inline-block";
+      sign.style.margin= "0";
+      sign.style.padding = "0";
+      sign.style.opacity = "0";
+      sign.innerText= event.data.chatID;
+      chatBox.appendChild(sign);
+
+
+    }
+  }
+  );
+
+
 });
+
+///////////////////////////////////////////////////////////Initialize/////////////////////////////////////////////////////////
+
+
+
+/////////////////////////////////////////////////////////Submitting/////////////////////////////////////////////////////////
 
 async function submitMessage() {
   const inputField = document.getElementById("chatInput");
@@ -34,58 +173,50 @@ async function submitMessage() {
   if (!userPrompt) return; 
 
   inputField.value = ""; 
+  renderChatBubble("user-message", userPrompt);
 
-  const userBubble = document.createElement("div");
-  userBubble.className = "response user-message";
-  userBubble.textContent = userPrompt; 
-  chatBox.appendChild(userBubble);
-  chatBox.scrollTop = chatBox.scrollHeight;
 
-  try {
+  if(!chatBox.querySelector(".sign")){
+    const rowsCount = await fetch("http://localhost:3000/history/count");
+    const rowsNum = await rowsCount.json();
+    const chatID = rowsNum.count + 1;
+    try {
     const response = await fetch("http://localhost:3000", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ message: userPrompt })
+      body: JSON.stringify({ message: userPrompt, chatID: chatID })
     });
 
     const data = await response.json();
     const aiReply = data.reply; 
-    const aiText = aiReply.replace(/<[^>]+>/g, '');
+    renderChatBubble("ai-message", aiReply);
 
-    const aiBubble = document.createElement("div");
-    aiBubble.className = "response ai-message";
-    aiBubble.innerHTML = aiReply;
-    const copyButton = document.createElement("button");
-    copyButton.textContent = "Copy";
-    copyButton.className = "copy-button";
-    copyButton.addEventListener("click", () => {
-        const textarea = document.createElement("textarea");
-        textarea.value = aiText;
-        textarea.style.position = "fixed"; 
-        document.body.appendChild(textarea);
-        textarea.focus();
-        textarea.select();
+    }catch (err){
+      console.error("Error fetching AI reply:", err);
+      const errorBubble = document.createElement("div");
+      errorBubble.className = "response ai-message"; 
+      errorBubble.style.color = "red";
+      errorBubble.textContent = "Sorry, I couldn't get a response. Please try again.";
+      chatBox.appendChild(errorBubble);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+  }else{
+    const chatID = Number(chatBox.querySelector(".sign").innerText);
+    try {
+      const response = await fetch("http://localhost:3000", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ message: userPrompt, chatID: chatID })
+      });
 
-        copyButton.textContent = "Copied!";
-        setTimeout(() => {
-          copyButton.textContent = "Copy";
-        }, 2000);
+      const data = await response.json();
+      const aiReply = data.reply; 
+      renderChatBubble("ai-message", aiReply);
 
-        try {
-          document.execCommand("copy");
-        } catch (err) {
-          console.error("Copy failed!", err);
-        }
-        document.body.removeChild(textarea);
-
-    });
-
-
-    aiBubble.appendChild(copyButton);
-    chatBox.appendChild(aiBubble);
-    chatBox.scrollTop = chatBox.scrollHeight;
 
   } catch (err) {
     console.error("Error fetching AI reply:", err);
@@ -96,7 +227,17 @@ async function submitMessage() {
     chatBox.appendChild(errorBubble);
     chatBox.scrollTop = chatBox.scrollHeight;
   }
+
+  }
 }
+
+/////////////////////////////////////////////////////////Submitting/////////////////////////////////////////////////////////
+
+
+
+
+
+/////////////////////////////////////////////////////////Quick prompt/////////////////////////////////////////////////////////
 
 function quickPrompt(type) {
   const inputField = document.getElementById("chatInput");
@@ -122,6 +263,9 @@ function quickPrompt(type) {
   inputField.focus();   
 }
 
+/////////////////////////////////////////////////////////Quick prompt/////////////////////////////////////////////////////////
+
+
 
 function formatText(text) {
   if (!text) return ""; 
@@ -136,3 +280,4 @@ function formatText(text) {
   return text.trim(); 
 
 }
+
