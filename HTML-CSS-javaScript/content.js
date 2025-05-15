@@ -1,50 +1,11 @@
 let iframe = null;
 let toggleButton = null;
 
-
-window.addEventListener("message", async (event) => {
-  if (event.data.type === "chat-data") {
-    const chat = event.data.chat;
-    const id = event.data.id;
-    if(chat !== ""){
-      if(id>0){
-        try {
-          const res = await fetch("http://localhost:3000/save-history", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({chat:chat, id: id})
-          });
-          const { success } = await res.json();
-          console.log("Chat saved successfully:", success);
-        } catch (err) {
-          console.error("Failed to save to database:", err);
-        }
-      }else{
-        try {
-          const res = await fetch("http://localhost:3000/save-history", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({chat:chat, id: 0})
-          });
-          const { success } = await res.json();
-          console.log("Chat saved successfully:", success);
-        } catch (err) {
-          console.error("Failed to save to database:", err);
-        }        
-      }
-    } 
-  
-  }
-  if (event.data.close){
+window.addEventListener("message", async(event) =>{
+  if(event.data.type === "close"){
     removeSidebar();
   }
-});
-
-
-
-
-
-
+})
 
 
 function getCurrentChat() {
@@ -117,6 +78,7 @@ function showChatInSidebar(chat, chatID) {
 
 async function injectSidebar() {
   if (document.getElementById("ai-writer-sidebar")) return;
+  return new Promise(async (resolve) =>{
   iframe = document.createElement("iframe");
   iframe.src = await chrome.runtime.getURL("AIWriter.html");
   iframe.id = "ai-writer-sidebar";
@@ -129,30 +91,33 @@ async function injectSidebar() {
     border: none;
     z-index: 999999;
     box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
-  `;
+    `;
+    iframe.onload = () => {
+      resolve();
+    };
  
-  buttons = document.createElement('div');
-  buttons.style.cssText = `
+    buttons = document.createElement('div');
+    buttons.style.cssText = `
     position: fixed;
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
     background: white;
-
+    
     top: 10px;
     right: 10px;
     z-index: 1000000;
     `;
     
-  closeButton = document.createElement('button');
-  closeButton.id = 'close-sidebar';
-  closeButton.innerHTML = 'X';
-  closeButton.style.cssText = `
+    closeButton = document.createElement('button');
+    closeButton.id = 'close-sidebar';
+    closeButton.innerHTML = 'X';
+    closeButton.style.cssText = `
     width: 30px;
     height: 30px;
     
-  
+    
     background: red;
     color: white;
     border: none;
@@ -160,11 +125,11 @@ async function injectSidebar() {
     cursor: pointer;
     font-size: 16px;
     font-weight: bold;
-  `;
-
-  hamburgerMenu = document.createElement('button');
-  hamburgerMenu.innerHTML = '&#9776;';
-  hamburgerMenu.style.cssText = `
+    `;
+    
+    hamburgerMenu = document.createElement('button');
+    hamburgerMenu.innerHTML = '&#9776;';
+    hamburgerMenu.style.cssText = `
     width: 30px;
     heigh: 30px;
     color: black;
@@ -173,61 +138,62 @@ async function injectSidebar() {
     font-size: 30px;
     border: none;
     cursor: pointer;
-  `;
-  buttons.appendChild(closeButton);
-  buttons.appendChild(hamburgerMenu);
-  document.body.appendChild(buttons);
-
-  closeButton.addEventListener('click', async () => {
-    iframe.contentWindow.postMessage({ type: "get-chat" }, "*");
-  });
-  closeButton.addEventListener('mouseover', () => {
-    closeButton.style.background = 'darkred';
-    closeButton.style.color = 'white';
-  });
-  closeButton.addEventListener('mouseout', () => {
-    closeButton.style.background = 'red';
-    closeButton.style.color = 'white';
-  });
-
-
+    `;
+    buttons.appendChild(closeButton);
+    buttons.appendChild(hamburgerMenu);
+    document.body.appendChild(buttons);
+    
+    closeButton.addEventListener('click', async () => {
+      iframe.contentWindow.postMessage({ type: "save-and-close" }, "*");
+    });
+    closeButton.addEventListener('mouseover', () => {
+     closeButton.style.background = 'darkred';
+     closeButton.style.color = 'white';
+    });
+   closeButton.addEventListener('mouseout', () => {
+     closeButton.style.background = 'red';
+     closeButton.style.color = 'white';
+    });
+  
+  
   hamburgerMenu.addEventListener('click', () => {
     const historySidebar = document.createElement('div');
     historySidebar.id = 'chat-history-list';
     historySidebar.style.cssText = `
-      position: fixed;
-      top: 0;
-      right: 0;
-      width: 450px;
-      height: 100vh;
-      background: white;
-      overflow-y: auto;
-      z-index: 9999999;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 450px;
+    height: 100vh;
+    background: white;
+    overflow-y: auto;
+    z-index: 9999999;
     `;
     historySidebar.innerHTML = `
-      <h2 style="display:inline-block">Chat History</h2> 
-      <button id="close-history" style="float:right;
-        background: white;
-        border: none;
-        cursor: pointer;
-        font-size: 16px;
-        font-weight: bold;">&#8594;</button>
-      <div id="chat-history-container"></div>
-      `;
-         
+    <h2 style="display:inline-block">Chat History</h2> 
+    <button id="close-history" style="float:right;
+    background: white;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;">&#8594;</button>
+    <div id="chat-history-container"></div>
+    `;
+    
     historySidebar.innerHTML += `<div id="chat-history-list"></div>`;
     document.body.appendChild(historySidebar);
     updateChatHistoryMenu();
-
+    
     historySidebar.querySelector('#close-history').addEventListener('click', () => {
       historySidebar.remove();
     });
-
-
+    
+    
   });
-
+  
   document.body.appendChild(iframe);
   document.body.style.paddingRight = '450px'; 
+});
   
 }
 
@@ -245,6 +211,12 @@ function removeSidebar() {
   }
 }
 
+window.addEventListener("beforeunload", () => {
+  if (iframe) {
+    iframe.contentWindow.postMessage({ type: "save-and-close" }, "*");
+  }
+});
+
 
 
 function createToggleButton() {
@@ -253,8 +225,10 @@ function createToggleButton() {
   toggleButton.innerHTML = `<img src="${chrome.runtime.getURL('icon.png')}" alt="AI Writer" style="width: 30px; height: 30px; cursor: pointer;">`;
   document.body.appendChild(toggleButton);
 
-  toggleButton.addEventListener('click', () => {
-    injectSidebar();
+  toggleButton.addEventListener('click', async () => {
+    const selectedText = window.getSelection().toString().trim();
+    await injectSidebar();
+    iframe.contentWindow.postMessage({type: "selected", message: selectedText}, "*");
   });
 
   const cssLink = document.createElement('link');
@@ -263,10 +237,34 @@ function createToggleButton() {
   document.head.appendChild(cssLink);
 }
 
-
-
-
-
-
 createToggleButton();
+
+
+const icon = document.getElementById('ai-writer-toggle-button');
+
+window.addEventListener("mouseup", async (event) =>{
+  const selection = window.getSelection();
+  const selectedText = selection.toString().trim();
+
+  if(selectedText.length > 0){
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect(); 
+    icon.style.top = `${rect.top + window.scrollY - 10}px`;
+    icon.style.left = `${rect.right + window.scrollX + 10}px`;
+    icon.id = 'ai-writer-toggle-button-selected';
+    icon.style.display = "flex";
+  }else{
+    icon.id = 'ai-writer-toggle-button';
+    icon.style.top = '50%';
+    icon.style.right = '10px';
+    icon.style.left='auto';
+  }
+
+});
+
+
+
+
+
+
 
