@@ -66,54 +66,33 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  sendButton.addEventListener('click', submitMessage);
+  sendButton.addEventListener('click', () =>{
+    submitMessage();
+    const activeButton = Array.from(actionButtons).find((button) => button.classList.contains('active'));
+    if (activeButton) {
+      activeButton.classList.remove('active');
+    }
+
+  });
 
   actionButtons.forEach((button) => {
     button.addEventListener('click', () => quickPrompt(button.textContent.trim()));
   });
 
   window.addEventListener("message", async (event) => {
-    if (event.data.type === "get-chat") {
-      const chatBox = document.getElementById("chatBox");
-      if (chatBox.querySelector(".sign")){
-        
-        const id = Number(chatBox.querySelector(".sign").innerText);
-        chatBox.removeChild(chatBox.querySelector(".sign"));
-        const chat = chatBox.innerHTML;
-        const close = true;
-        window.parent.postMessage({ type: "chat-data", chat,id, close }, "*");
-        
-     }else{
-        const chat = chatBox.innerHTML;
-        const id = 0;
-        const close = true;
-        window.parent.postMessage({ type: "chat-data", chat, id, close }, "*");
-     }
+    if(event.data.type === "save-and-close"){
+        await saveChat();        
+        window.parent.postMessage({type: "close"}, "*");
     }
-  });
-  window.addEventListener("message", async (event) => {
-    if (event.data.type === "show-chat"){
+    if(event.data.type === "selected"){
+      const inputField = document.getElementById('chatInput');
+      inputField.value = event.data.message;
+    }
+    if(event.data.type === "show-chat"){
       const chatBox = document.getElementById("chatBox");
       if(chatBox.innerHTML !== ""){
-        if (chatBox.querySelector(".sign")){
-          
-          const id = Number(chatBox.querySelector(".sign").innerText);
-          chatBox.removeChild(chatBox.querySelector(".sign"));
-          const chat = chatBox.innerHTML;
-          const close = false;
-          window.parent.postMessage({ type: "chat-data", chat,id,close }, "*");
-          
-        } 
-        else{
-          const chat = chatBox.innerHTML;
-          const id = 0;
-          const close = false;
-          window.parent.postMessage({ type: "chat-data", chat, id, close }, "*");
-        }        
+        saveChat();        
       }
-
-
-
       chatBox.innerHTML = event.data.chat;
       const aiResponse = chatBox.querySelector(".ai-message");
       const aiText = aiResponse ? aiResponse.innerHTML.replace(/<[^>]+>/g, '') : "";
@@ -126,38 +105,84 @@ window.addEventListener('DOMContentLoaded', () => {
           document.body.appendChild(textarea);
           textarea.focus();
           textarea.select();
-
+  
           copyButton.textContent = "Copied!";
           setTimeout(() => {
             copyButton.textContent = "Copy";
           }, 2000);
-
+  
           try {
             document.execCommand("copy");
           } catch (err) {
             console.error("Copy failed!", err);
           }
           document.body.removeChild(textarea);
-
+  
         });
       });
-
-      const sign = document.createElement("div");
+  
+      const sign = document.createElement("input");
+      sign.type = "hidden";
       sign.className = "sign";
-      sign.style.display = "inline-block";
-      sign.style.margin= "0";
-      sign.style.padding = "0";
-      sign.style.opacity = "0";
-      sign.innerText= event.data.chatID;
+      sign.value= event.data.chatID;
       chatBox.appendChild(sign);
+    }
+
+  });
+  
+});
 
 
+
+
+
+async function saveChat() {
+  const chatBox = document.getElementById("chatBox");
+  if (chatBox.querySelector(".sign")){
+    const id = Number(chatBox.querySelector(".sign").value);
+    chatBox.removeChild(chatBox.querySelector(".sign"));
+    const chat = chatBox.innerHTML;
+    if(chat !== ""){
+      try {
+        const res = await fetch("http://localhost:3000/save-history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({chat:chat, id: id})
+        });
+        const { success } = await res.json();
+        console.log("Chat saved successfully:", success);
+      } catch (err) {
+        console.error("Failed to save to database:", err);
+      }
     }
   }
-  );
+  else{
+    const chat = chatBox.innerHTML;
+    const id = 0;
+    if(chat !== ""){
+      try {
+        const res = await fetch("http://localhost:3000/save-history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({chat:chat, id: id})
+        });
+        const { success } = await res.json();
+        console.log("Chat saved successfully:", success);
+      } catch (err) {
+        console.error("Failed to save to database:", err);
+      }
+    }
+  }
+
+}
 
 
-});
+
+
+
+
+
+
 
 ///////////////////////////////////////////////////////////Initialize/////////////////////////////////////////////////////////
 
@@ -203,7 +228,7 @@ async function submitMessage() {
       chatBox.scrollTop = chatBox.scrollHeight;
     }
   }else{
-    const chatID = Number(chatBox.querySelector(".sign").innerText);
+    const chatID = Number(chatBox.querySelector(".sign").value);
     try {
       const response = await fetch("http://localhost:3000", {
         method: "POST",
