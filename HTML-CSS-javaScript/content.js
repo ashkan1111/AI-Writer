@@ -1,21 +1,7 @@
 let iframe = null;
 let toggleButton = null;
 
-window.addEventListener("message", async(event) =>{
-  if(event.data.type === "close"){
-    removeSidebar();
-  }
-})
 
-
-function getCurrentChat() {
-  const chatBox = document.getElementById("chatBox");
-
-  if (chatBox) {
-    return chatBox.innerHTML;
-  }
-  return null;
-}
 
 async function fetchChatHistory(){
   try{
@@ -57,11 +43,11 @@ async function updateChatHistoryMenu() {
     item.addEventListener("mouseout", () => {
       item.style.background = "#f9f9f9";
     });
-    item.addEventListener("click", () => {
+    item.onclick = () => {
       showChatInSidebar(chat.inhtml, chat.id);
       const historySidebar = document.getElementById("chat-history-list");
       historySidebar.remove();
-    });
+    };
       
     
       
@@ -144,7 +130,7 @@ async function injectSidebar() {
     document.body.appendChild(buttons);
     
     closeButton.addEventListener('click', async () => {
-      iframe.contentWindow.postMessage({ type: "save-and-close" }, "*");
+      removeSidebar();
     });
     closeButton.addEventListener('mouseover', () => {
      closeButton.style.background = 'darkred';
@@ -180,7 +166,7 @@ async function injectSidebar() {
     <div id="chat-history-container"></div>
     `;
     
-    historySidebar.innerHTML += `<div id="chat-history-list"></div>`;
+    // historySidebar.innerHTML += `<div id="chat-history-list"></div>`;
     document.body.appendChild(historySidebar);
     updateChatHistoryMenu();
     
@@ -210,14 +196,6 @@ function removeSidebar() {
     document.body.style.paddingRight = '';
   }
 }
-
-window.addEventListener("beforeunload", () => {
-  if (iframe) {
-    iframe.contentWindow.postMessage({ type: "save-and-close" }, "*");
-  }
-});
-
-
 
 function createToggleButton() {
   toggleButton = document.createElement('div');

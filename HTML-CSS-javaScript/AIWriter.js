@@ -5,7 +5,8 @@ function renderChatBubble(className, text) {
   const bubble = document.createElement("div");
   bubble.className = "response " + className;
   bubble.innerHTML = text;
-  const aiText = text.replace(/<[^>]+>/g, '');
+  const aiText = typeof text === 'string' ? text.replace(/<[^>]+>/g, '') : '';
+
   if(className === "ai-message"){
     const copyButton = document.createElement("button");
     copyButton.textContent = "Copy";
@@ -80,25 +81,22 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   window.addEventListener("message", async (event) => {
-    if(event.data.type === "save-and-close"){
-        await saveChat();        
-        window.parent.postMessage({type: "close"}, "*");
-    }
     if(event.data.type === "selected"){
       const inputField = document.getElementById('chatInput');
       inputField.value = event.data.message;
     }
     if(event.data.type === "show-chat"){
       const chatBox = document.getElementById("chatBox");
-      if(chatBox.innerHTML !== ""){
-        saveChat();        
-      }
       chatBox.innerHTML = event.data.chat;
-      const aiResponse = chatBox.querySelector(".ai-message");
-      const aiText = aiResponse ? aiResponse.innerHTML.replace(/<[^>]+>/g, '') : "";
-      const copyButtons = document.querySelectorAll(".copy-button");
-      copyButtons.forEach((copyButton) => {
-        copyButton.addEventListener("click", () => {
+      const aiResponse = chatBox.querySelectorAll(".ai-message");
+      const copyButton = document.createElement("button");
+      copyButton.textContent = "Copy";
+      copyButton.className = "copy-button";
+      aiResponse.forEach((aiResponse) => {
+        aiResponse.appendChild(copyButton);
+        const button = aiResponse.querySelector(".copy-button");
+        const aiText = aiResponse ? aiResponse.innerHTML.replace(/<[^>]+>/g, '') : "";
+        button.addEventListener("click", () => {
           const textarea = document.createElement("textarea");
           textarea.value = aiText;
           textarea.style.position = "fixed"; 
@@ -106,9 +104,9 @@ window.addEventListener('DOMContentLoaded', () => {
           textarea.focus();
           textarea.select();
   
-          copyButton.textContent = "Copied!";
+          button.textContent = "Copied!";
           setTimeout(() => {
-            copyButton.textContent = "Copy";
+            button.textContent = "Copy";
           }, 2000);
   
           try {
@@ -135,55 +133,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 
-
-async function saveChat() {
-  const chatBox = document.getElementById("chatBox");
-  if (chatBox.querySelector(".sign")){
-    const id = Number(chatBox.querySelector(".sign").value);
-    chatBox.removeChild(chatBox.querySelector(".sign"));
-    const chat = chatBox.innerHTML;
-    if(chat !== ""){
-      try {
-        const res = await fetch("http://localhost:3000/save-history", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({chat:chat, id: id})
-        });
-        const { success } = await res.json();
-        console.log("Chat saved successfully:", success);
-      } catch (err) {
-        console.error("Failed to save to database:", err);
-      }
-    }
-  }
-  else{
-    const chat = chatBox.innerHTML;
-    const id = 0;
-    if(chat !== ""){
-      try {
-        const res = await fetch("http://localhost:3000/save-history", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({chat:chat, id: id})
-        });
-        const { success } = await res.json();
-        console.log("Chat saved successfully:", success);
-      } catch (err) {
-        console.error("Failed to save to database:", err);
-      }
-    }
-  }
-
-}
-
-
-
-
-
-
-
-
-
 ///////////////////////////////////////////////////////////Initialize/////////////////////////////////////////////////////////
 
 
@@ -202,9 +151,7 @@ async function submitMessage() {
 
 
   if(!chatBox.querySelector(".sign")){
-    const rowsCount = await fetch("http://localhost:3000/history/count");
-    const rowsNum = await rowsCount.json();
-    const chatID = rowsNum.count + 1;
+    const chatID = -1;
     try {
     const response = await fetch("http://localhost:3000", {
       method: "POST",
@@ -215,7 +162,7 @@ async function submitMessage() {
     });
 
     const data = await response.json();
-    const aiReply = data.reply; 
+    const aiReply = typeof data.reply === 'string' ? data.reply : 'No response'; 
     renderChatBubble("ai-message", aiReply);
 
     }catch (err){

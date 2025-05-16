@@ -35,50 +35,59 @@ const history = {};
 db.all(`SELECT * FROM history ORDER BY created_at DESC LIMIT 100`, [], (err, rows) => {
   if (err) {
     console.error(err);
-    return res.status(500).json({ history: [] });
+    return;
   }
   if(rows){
     
     rows.forEach((row) => {
       if (!history[row.id]) {
       history[row.id] = [];
-    }
-    
-    
-    const chatContent = row.inhtml || "";
-    const segments = chatContent.split(/<\/div>\s*<div class="response /); 
-    
-    for (let i = 0; i < segments.length; i++) {
-      const segment = segments[i];
-      const cleanText = segment.replace(/<[^>]+>/g, '').trim(); 
-      
-      if (segment.includes("user-message")) {
-        history[row.id].push({ role: "user", parts: [{ text: cleanText }] });
-      } else if (segment.includes("ai-message")) {
-        history[row.id].push({ role: "model", parts: [{ text: cleanText }] });
       }
-    }
-    
-    
-  });
+      
+      const chatContent = row.inhtml || "";
+      const segments = chatContent.split(/<\/div>\s*<div class="response /); 
+      
+      for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i];
+        const cleanText = segment.replace(/<[^>]+>/g, '').trim(); 
+        
+        if (segment.includes("user-message")) {
+          history[row.id].push({ role: "user", parts: [{ text: cleanText }] });
+        } else if (segment.includes("ai-message")) {
+          history[row.id].push({ role: "model", parts: [{ text: cleanText }] });
+        }
+      }
 
+    });
   }
-
 });
 
 
 
 app.post('/', async (req, res) => {
   const {message, chatID} = req.body;
+  
   if (!message || !chatID) {
-  return res.status(400).json({ error: 'Message or chatID missing!' });
+    return res.status(400).json({ error: 'Message or chatID missing!' });
   }
-  if (!history[chatID]) {
-    history[chatID] = [];
+  let id;
+  let newChat;
+  if(Number(chatID) === -1){
+    const rowsNumber = await getNumberOfRows();
+    id = rowsNumber + 1;
+    newChat = true;
+  }
+  else{
+    id = chatID;
+    newChat = false;
+  }
+
+  if (!history[id]) {
+    history[id] = [];
   }
   try {
     const chat = model.startChat({
-      history: history[chatID], 
+      history: history[id], 
       generationConfig: {
         temperature: 0.5,
         topP: 0.9,
@@ -87,16 +96,12 @@ app.post('/', async (req, res) => {
     });
 
     const {response} = await chat.sendMessage(message);
-
-    history[chatID].push(
-      { role: 'user', parts: [{ text: message }] },
-      { role: 'model', parts: [{ text: response.text() }] }
-    );
-
     const aiReply = md.render(response.text());
+
+    save(id, newChat);
     res.json({ reply: aiReply });
 
-  } catch (err) {
+  }catch (err){
     console.error('Error generating response:', err);
     res.status(500).json({ error: 'AI model failed to respond.' });
   }
@@ -104,36 +109,53 @@ app.post('/', async (req, res) => {
 });
 
 
+async function getNumberOfRows(){
+  return new Promise((resolve, reject) => {
+    db.get(`SELECT COUNT(*) AS count FROM history`, (err, row) => {
+      if (err) {
+        console.error(err.message);
+        reject(err);
+      } else {
+        resolve(row.count);
+      }
+    });
+  });
+}
 
-app.post('/save-history', (req, res) => {
-  const chat = req.body.chat;
-  const id = req.body.id;
-  if(id === 0){
-    db.run(`INSERT INTO history (inhtml) VALUES (?)`, [chat], function (err){
+
+async function save(id, newChat){
+  const chat = history[id];
+  const chatHTML = chat.map((message) => {
+    const roleClass = message.role === 'user' ? 'user-message' : 'ai-message';
+    if(roleClass === 'ai-message'){
+      const aiReply = md.render(message.parts[0].text);
+      const aiReplyHTML = `<div class=\"response ai-message\">${aiReply}</div>`;
+      return aiReplyHTML;
+    }
+    else{
+      const userMessage = message.parts[0].text;
+      const userMessageHTML = `<div class=\"response user-message\">${userMessage}</div>`;
+      return userMessageHTML;
+    }}).join('');
+
+  if(newChat){
+    db.run(`INSERT INTO history (inhtml) VALUES (?)`, [chatHTML], function (err){
       if (err){
         console.error(err);
-        return res.status(500).json({ success: false });
       }
-      res.json({ success: true });
+      console.log(`Row with ID ${id} inserted successfully.`);
+    });
   
-    });
-  }
-  else{
-    db.run(`UPDATE history SET inhtml = ? WHERE id = ?`, [chat, req.body.id], function (err){
+  }else{
+    db.run(`UPDATE history SET inhtml = ? WHERE id = ?`, [chatHTML, id], function (err){
       if (err){
         console.error(err);
-        return res.status(500).json({ success: false });
       }else {
-      console.log(`Row with ID ${req.body.id} updated successfully.`);
+      console.log(`Row with ID ${id} updated successfully.`);
       }
-      res.json({ success: true });
     });
   }
-
-
-
-});
-
+}
 
 
 
@@ -147,20 +169,11 @@ app.get('/get-history', (req, res) => {
   });
 });
 
-app.get('/history/count', (req, res) => {
-  db.get(`SELECT COUNT(*) AS count FROM history`, [], (err, row) => {
-    if (err) {
-      console.error(err.message);
-      return res.status(500).json({ count: 0 });
-    }
-    res.json({ count: row.count });
-  });
-});
+
+
 
 
 const port = 3000;
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
 });
-
-
