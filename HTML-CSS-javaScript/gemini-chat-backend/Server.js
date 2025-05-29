@@ -32,7 +32,7 @@ const model = new GoogleGenerativeAI(process.env.GEMINI_API_KEY).getGenerativeMo
 
 const history = {};
 
-db.all(`SELECT * FROM history ORDER BY created_at DESC LIMIT 100`, [], (err, rows) => {
+db.all(`SELECT * FROM history`, [], (err, rows) => {
   if (err) {
     console.error(err);
     return;
@@ -45,7 +45,7 @@ db.all(`SELECT * FROM history ORDER BY created_at DESC LIMIT 100`, [], (err, row
       }
       
       const chatContent = row.inhtml || "";
-      const segments = chatContent.split(/<\/div>\s*<div class="response /); 
+      const segments = chatContent.match(/<div class="response (?:user|ai)-message">[\s\S]*?<\/div>/g);
       
       for (let i = 0; i < segments.length; i++) {
         const segment = segments[i];
@@ -99,7 +99,7 @@ app.post('/', async (req, res) => {
     const aiReply = md.render(response.text());
 
     save(id, newChat);
-    res.json({ reply: aiReply });
+    res.json({ reply: aiReply, id: id });
 
   }catch (err){
     console.error('Error generating response:', err);
